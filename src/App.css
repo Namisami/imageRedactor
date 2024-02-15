@@ -1,0 +1,17 @@
+.container {
+  margin: 0 20%;
+}
+.canvas {
+  margin-top: 2em;
+  border-radius: 5px;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+.color {
+  width: 50px;
+  height: 50px;
+}
+.img-info {
+  margin-bottom: 2em;
+}
