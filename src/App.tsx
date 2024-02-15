@@ -28,8 +28,14 @@ function App() {
           if (canvas.parentElement) {
             proportion = canvas.parentElement.clientWidth / img.naturalWidth;
           }
-          canvas.width = img.naturalWidth * proportion;
-          canvas.height = img.naturalHeight * proportion;
+          console.log(proportion)
+          if (proportion < 1) {
+            canvas.width = img.naturalWidth * proportion;
+            canvas.height = img.naturalHeight * proportion;
+          } else {
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+          }
           ctx!!.drawImage(img, 0, 0, canvas.width, canvas.height);
           setState({...state, imageWidth: img.naturalWidth, imageHeight: img.naturalHeight})
         }
@@ -72,7 +78,9 @@ function App() {
   return (
     <div className="container">
       <Tabs defaultActiveKey="1" items={ items } />
-      <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
+      <div className="img-view">
+        <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
+      </div>
       <div className="img-info">
         <h1>Информация о изображении</h1>
         <p>{ `RGB(${state.rgb})` }</p>

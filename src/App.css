@@ -2,11 +2,17 @@
   margin: 0 20%;
 }
 .canvas {
-  margin-top: 2em;
+  /* margin: 0 auto; */
+  /* margin-top: 2em; */
   border-radius: 5px;
-  width: 100%;
-  height: auto;
+  /* width: 100%;
+  height: auto; */
   object-fit: cover;
+}
+.img-view {
+  margin: 2em 0;
+  display: flex;
+  justify-content: center;
 }
 .color {
   width: 50px;
