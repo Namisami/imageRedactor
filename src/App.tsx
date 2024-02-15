@@ -82,7 +82,6 @@ function App() {
         <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
       </div>
       <div className="img-info">
-        <h1>Информация о изображении</h1>
         <p>{ `RGB(${state.rgb})` }</p>
         <p>{ `X${state.x}` }</p>
         <p>{ `Y${state.y}` }</p>
