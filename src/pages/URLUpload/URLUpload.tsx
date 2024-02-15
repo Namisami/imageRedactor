@@ -1,4 +1,4 @@
-import { Input, Form, Button, Space } from 'antd';
+import { Input, Form, Button } from 'antd';
 import axios from 'axios';
 import './URLUpload.css'
 
