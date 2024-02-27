@@ -90,12 +90,14 @@ function App() {
             <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
           </div>
           <div className="img-info">
-            <p>{ `RGB(${state.rgb})` }</p>
-            <p>{ `X${state.x}` }</p>
-            <p>{ `Y${state.y}` }</p>
             <p>{ `Width: ${state.imageWidth}` }</p>
             <p>{ `Height: ${state.imageHeight}` }</p>
-            <div style={{ background: `rgb(${[...state.rgb]})` }} className='color' />
+            <div className="color-info">
+              <div style={{ background: `rgb(${[...state.rgb]})` }} className='color' />
+              <p>{ `RGB(${state.rgb})` }</p>
+            </div>
+            <p>{ `X${state.x}` }</p>
+            <p>{ `Y${state.y}` }</p>
           </div>
         </div>
       </div>
