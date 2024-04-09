@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { Tabs, Modal, Button } from 'antd';
-import type { TabsProps } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Tabs, Modal, Button, Slider } from 'antd';
+import type { TabsProps, SliderSingleProps } from 'antd';
 import FileUpload from './pages/FileUpload/FileUpload';
 import URLUpload from './pages/URLUpload/URLUpload';
 import './App.css'
@@ -15,37 +15,89 @@ function App() {
     imageHeight: 0,
   })
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [imageScale, setImageScale] = useState(100);
   
-  const uploadImageToCanvas = (file: File) => {
+  useEffect(() => {
+    changeImageScale();
+
+    () => {
+      window.localStorage.removeItem('image');
+    }
+  }, [imageScale])
+
+  const getCanvasNCtx = () => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const ctx = canvas.getContext('2d');
-      const reader = new FileReader();
-      reader.onload = function(file) {
-        const img = new Image();
-        img.onload = function() {
-          // let proportion = 1;
-          // if (canvas.parentElement) {
-          //   proportion = canvas.parentElement.clientWidth / img.naturalWidth;
-          // }
-          // if (proportion < 1) {
-          //   canvas.width = img.naturalWidth * proportion;
-          //   canvas.height = img.naturalHeight * proportion;
-          // } else {
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-          // }
-          ctx!!.drawImage(img, 0, 0, canvas.width, canvas.height);
-          setIsModalOpen(false);
-          setState({...state, imageWidth: img.naturalWidth, imageHeight: img.naturalHeight});
-        }
-        if (file.target?.result) {
-          img.src = file.target.result.toString();
-        }
-      }
-      reader.readAsDataURL(file);  
+      const ctx = canvas.getContext('2d', {
+        willReadFrequently: true
+      });
+      return [canvas, ctx]
     }
+  }
+
+  const changeImageScale = () => {
+    const [canvas, ctx] = getCanvasNCtx();
+
+    const imgURL = window.localStorage.getItem('image');
+    
+    if (imgURL !== null) {
+      const savedImg = new Image();
+      savedImg.src = imgURL;
+
+      const imageScaleMultiplier = imageScale / 100;
+      const newImageWidth = savedImg.width * imageScaleMultiplier;
+      const newImageHeight = savedImg.height * imageScaleMultiplier;
+      
+      canvas.width = newImageWidth;
+      canvas.height = newImageHeight;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(savedImg, 0, 0, newImageWidth, newImageHeight);
+    }
+  }
+
+  const renderImage = (
+    img: HTMLImageElement,
+  ) => {
+    const [canvas, ctx] = getCanvasNCtx();
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Сохранение исходного изображения
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    window.localStorage.setItem('image', canvas.toDataURL("image/png"))
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+
+    const baseScale = Math.min(
+      canvas.parentElement.clientWidth / img.naturalWidth,
+      canvas.parentElement.clientHeight / img.naturalHeight
+    )
+
+    setImageScale(Math.floor(baseScale * 100));
+    
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  }
+  
+  const uploadImageToCanvas = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = function(file) {
+      const img = new Image();
+      img.onload = function() {
+        renderImage(img);
+        setIsModalOpen(false);
+        setState({...state, imageWidth: img.naturalWidth, imageHeight: img.naturalHeight});
+      }
+      if (file.target?.result) {
+        img.src = file.target.result.toString();
+      }
+    }
+    reader.readAsDataURL(file);  
   }
 
   const items: TabsProps['items'] = [
@@ -62,19 +114,16 @@ function App() {
   ];
 
   const getPixelInfo = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log(e)
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      // const canvasX = canvas.offsetLeft;
-      // const canvasY = canvas.offsetTop;
-      // const mouseX = (e.pageX - canvasX);
-      // const mouseY = (e.pageY - canvasY);
-      const mouseX = e.nativeEvent.offsetX;
-      const mouseY = e.nativeEvent.offsetY;
-      const p = ctx!!.getImageData(mouseX, mouseY, 1, 1).data;
-      setState({...state, rgb: [p[0], p[1], p[2]], x: mouseX, y: mouseY}) 
-    }
+    const [canvas, ctx] = getCanvasNCtx();
+    const mouseX = e.nativeEvent.offsetX;
+    const mouseY = e.nativeEvent.offsetY;
+    const p = ctx.getImageData(mouseX, mouseY, 1, 1).data;
+    setState({...state, rgb: [p[0], p[1], p[2]], x: mouseX, y: mouseY}) 
+  }
+
+  const scaleMarks: SliderSingleProps['marks'] = {
+    12: '12%',
+    300: '300%',
   }
 
   return (
@@ -98,6 +147,13 @@ function App() {
             </div>
             <p>{ `X${state.x}` }</p>
             <p>{ `Y${state.y}` }</p>
+            <Slider 
+              min={ 12 } 
+              max={ 300 } 
+              marks={ scaleMarks } 
+              value={ imageScale }
+              onChange={ (scale) => setImageScale(scale) } 
+            />
           </div>
         </div>
       </div>

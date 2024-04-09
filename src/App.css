@@ -17,8 +17,8 @@
   height: 90%;
 }
 .img-view {
-  overflow: overlay;
-  scrollbar-width: 1px;
+  overflow: auto;
+  /* scrollbar-width: 1px; */
   width: 100%;
   display: flex;
 }
