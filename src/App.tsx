@@ -1,215 +1,158 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Tabs, Modal, Button, Slider } from 'antd';
 import type { TabsProps, SliderSingleProps } from 'antd';
 import FileUpload from './pages/FileUpload/FileUpload';
 import URLUpload from './pages/URLUpload/URLUpload';
 import './App.css'
 import ChangeSizeModal from './components/ChangeSizeModal/ChangeSizeModal';
+import tabsItemsOnFunc from './utils/tabsItemsOnFunc';
+import getNewDataNearestNeighbour from './utils/getNewDataNearestNeighbour';
+
+interface LoadedImageI {
+  imageUri: string,
+  imageOriginalWidth: number,
+  imageOriginalHeight: number,
+}
+
+interface ModalI {
+  show: boolean,
+  title: string,
+  content: React.ReactNode
+}
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [state, setState] = useState({
+  const [loadedImage, setLoadedImage] = useState<LoadedImageI>({
+    imageUri: '',
+    imageOriginalWidth: 0,
+    imageOriginalHeight: 0
+  })
+  const [pixelInfo, setPixelInfo] = useState({
     rgb: [0, 0, 0],
     x: 0,
     y: 0,
-    imageWidth: 0,
-    imageHeight: 0,
   })
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modal, setModal] = useState<{
-    show: boolean,
-    title: string,
-    content: React.ReactNode
-  }>({
+  const [modal, setModal] = useState<ModalI>({
     show: false,
     title: '',
     content: null,
   });
   const [scale, setImageScale] = useState(100);
 
-  const getCanvasNCtx = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d', {
-        willReadFrequently: true
-      });
-      return [canvas, ctx]
-    }
+  const getCanvasNCtx = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext('2d', {
+      willReadFrequently: true
+    })!;
+    return [canvas, ctx]
+  }
+
+  useEffect(() => {
+    const imgPromise = imageUriToImgPromise(loadedImage.imageUri);
+    imgPromise.then((img) => {
+      renderImageFull(img);
+      setLoadedImage({
+        ...loadedImage,
+        imageOriginalWidth: img.naturalWidth, 
+        imageOriginalHeight: img.naturalHeight}
+      );
+    })
+  }, [loadedImage.imageUri])
+
+  useEffect(() => {
+    changeImageScale(scale);
+  }, [scale])
+
+  const imageUriToImgPromise = (uri: string): Promise<HTMLImageElement> => {
+    return new Promise(function (resolve, _) {
+      const img = new Image()
+      img.src = uri;
+      img.onload = () => {
+        resolve(img);
+      };
+    });
+  };
+
+  const renderImage = () => {
+    const [canvas, ctx] = getCanvasNCtx();
+    const imgPromise = imageUriToImgPromise(loadedImage.imageUri);
+    imgPromise.then((img) => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    });
+  }
+
+  const renderImageFull = (img: HTMLImageElement) => {
+    const [canvas, _] = getCanvasNCtx();
+    
+    const maxWidth = canvas.parentElement!.clientWidth;
+    const maxHeight = canvas.parentElement!.clientHeight;
+
+    const scale = Math.min(
+      maxWidth / img.width,
+      maxHeight / img.height
+    );
+
+    canvas.width = img.width * scale;
+    canvas.height = img.height * scale;
+    
+    setImageScale(Math.floor(scale * 100));
+    renderImage();
   }
 
   const changeImageScale = (scale: number) => {
-    const [canvas, ctx] = getCanvasNCtx();
-
-    const imgURL = window.localStorage.getItem('image');
+    const [canvas, _] = getCanvasNCtx();
     
-    if (imgURL !== null) {
-      const savedImg = new Image();
-      savedImg.src = imgURL;
-      
-      const imageScaleMultiplier = scale / 100;
-      const newImageWidth = savedImg.width * imageScaleMultiplier;
-      const newImageHeight = savedImg.height * imageScaleMultiplier;
-      
-      canvas.width = newImageWidth;
-      canvas.height = newImageHeight;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(savedImg, 0, 0, newImageWidth, newImageHeight);
-    }
+    const scaleMultiplyer = scale / 100; 
+
+    const imgPromise = imageUriToImgPromise(loadedImage.imageUri);
+    imgPromise.then((img) => {
+      canvas.width = img.width * scaleMultiplyer;
+      canvas.height = img.height * scaleMultiplyer;
+      renderImage();
+    })
   }
 
-  const renderImage = (
-    img: HTMLImageElement,
-  ) => {
-    const [canvas, ctx] = getCanvasNCtx();
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Сохранение исходного изображения
-    canvas.width = img.naturalWidth | img.width;
-    canvas.height = img.naturalHeight | img.height;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    window.localStorage.setItem('image', canvas.toDataURL("image/png"))
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    const baseScale = Math.min(
-      canvas.parentElement.clientWidth / (img.naturalWidth | img.width),
-      canvas.parentElement.clientHeight / (img.naturalHeight | img.height)
-      )
-
-    canvas.width = canvas.width * baseScale;
-    canvas.height = canvas.height * baseScale;
-
-    setImageScale(Math.floor(baseScale * 100));
-    
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
-  
   const uploadImageToCanvas = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = function(file) {
-      const img = new Image();
-      img.onload = function() {
-        renderImage(img);
-        setIsModalOpen(false);
-        setState({...state, imageWidth: img.naturalWidth, imageHeight: img.naturalHeight});
-      }
-      if (file.target?.result) {
-        img.src = file.target.result.toString();
-      }
-    }
-    reader.readAsDataURL(file);  
+    setLoadedImage({
+      ...loadedImage,
+      imageUri: URL.createObjectURL(file),
+    })
   }
-
-  const items: TabsProps['items'] = [
-    {
-      key: '1',
-      label: 'Загрузка по файлу',
-      children: <FileUpload onSuccessUpload={ (file) => { uploadImageToCanvas(file) }}/>,
-    },
-    {
-      key: '2',
-      label: 'Загрузка по URL',
-      children: <URLUpload onSuccessUpload={ (file) => { uploadImageToCanvas(file) }}/>,
-    },
-  ];
 
   const getPixelInfo = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const [canvas, ctx] = getCanvasNCtx();
+    const [_, ctx] = getCanvasNCtx();
     const mouseX = e.nativeEvent.offsetX;
     const mouseY = e.nativeEvent.offsetY;
     const p = ctx.getImageData(mouseX, mouseY, 1, 1).data;
-    setState({...state, rgb: [p[0], p[1], p[2]], x: mouseX, y: mouseY}) 
+    setPixelInfo({
+      ...pixelInfo, 
+      rgb: [p[0], p[1], p[2]], 
+      x: mouseX, 
+      y: mouseY 
+    }) 
   }
 
   const onSliderChange = (scale: number) => {
     setImageScale(scale);
-    changeImageScale(scale);
   }
 
-  function resizeImage(newWidth: number, newHeight: number) {
+  const resizeImage =(newWidth: number, newHeight: number) => {
     const [canvas, ctx] = getCanvasNCtx();
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const newData = getNewDataNearestNeighbour(imageData, newWidth, newHeight);
+    setLoadedImage({...loadedImage, imageUri: newData})
+  }
 
-    // const newCanvas = document.createElement('canvas');
-    // newCanvas.width = newWidth;
-    // newCanvas.height = newHeight;
-    // const newCtx = newCanvas.getContext('2d');
-
-    const srcData = imageData.data;
-    const srcWidth = imageData.width;
-    const srcHeight = imageData.height;
-
-    const destData = new Uint8ClampedArray(newWidth * newHeight * 4);
-
-    const scaleX = srcWidth / newWidth;
-    const scaleY = srcHeight / newHeight;
-
-    for (let y = 0; y < newHeight; y++) {
-      for (let x = 0; x < newWidth; x++) {
-        const srcX = Math.floor(x * scaleX);
-        const srcY = Math.floor(y * scaleY);
-
-        const srcIndex = (srcY * srcWidth + srcX) * 4;
-        const destIndex = (y * newWidth + x) * 4;
-
-        destData[destIndex] = srcData[srcIndex]; // Red channel
-        destData[destIndex + 1] = srcData[srcIndex + 1]; // Green channel
-        destData[destIndex + 2] = srcData[srcIndex + 2]; // Blue channel
-        destData[destIndex + 3] = srcData[srcIndex + 3]; // Alpha channel
-      }
-    }
-    const newImageData = new ImageData(destData, newWidth, newHeight);
-
-    const baseScale = Math.min(
-      canvas.parentElement.clientWidth / newWidth,
-      canvas.parentElement.clientHeight / newHeight
-      )
-
-    canvas.width = newWidth;
-    canvas.height = newHeight;
-
-    setImageScale(Math.floor(baseScale * 100));
-    ctx.putImageData(newImageData, 0, 0);
-
-
-    // canvas.width = newWidth;
-    // canvas.height = newHeight;
-    
-    // ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // ctx.putImageData(newImageData, 0, 0) 
-    // let newCanvas = document.createElement('canvas');
-    // var newCtx = newCanvas.getContext('2d')!;
-    // newCanvas.width = newImageData.width;
-    // newCanvas.height = newImageData.height;
-    // newCtx.putImageData(newImageData, 0, 0);
-    // const image = new Image(newWidth, newHeight);
-    // image.src = newCanvas.toDataURL("image/png");
-    
-    // const baseScale = Math.min(
-    //   canvas.parentElement.clientWidth / newWidth,
-    //   canvas.parentElement.clientHeight / newHeight
-    //   )
-
-    // canvas.width = newWidth * baseScale;
-    // canvas.height = newHeight * baseScale;
-
-    // setImageScale(Math.floor(baseScale * 100));
-    // renderImage(image);
-    // ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-    // ctx.putImageData(newImageData, 0, 0);
-    window.localStorage.setItem('image', canvas.toDataURL("image/png"))
-    setTimeout(() => {
-      changeImageScale(Math.floor(baseScale * 100))
-    }, 0)
-    
-    // setState({...state, imageHeight: newHeight, imageWidth: newWidth})
-    // console.log(Math.floor(baseScale * 100))
-    // setImageScale(Math.floor(baseScale * 100));
-    // changeImageScale();
-
-    // renderImage(newImageData);
-    // ctx.drawImage(newImageData, 0, 0, newWidth, newHeight);
+  const openModal = (
+    title: string,
+    content: React.ReactNode
+  ) => {
+    return setModal({
+      ...modal,
+      show: true,
+      title: title,
+      content: content
+    })
   }
 
   const scaleMarks: SliderSingleProps['marks'] = {
@@ -221,21 +164,20 @@ function App() {
     <div className="container">
       <div className="app">
         <div className="menu-panel">
-          <Button className="upload" type="primary" onClick={ () => setIsModalOpen(true) }>
+          <Button className="upload" type="primary" onClick={ () => openModal(
+            "Загрузить изображение",
+            <Tabs defaultActiveKey="1" items={ tabsItemsOnFunc(uploadImageToCanvas) } />
+          ) }>
             Загрузить изображение
           </Button>
-          <Button className="change-size" type="primary" onClick={ () => setModal({
-            ...modal,
-            show: true,
-            title: 'Изменение размера',
-            content: (
-              <ChangeSizeModal 
-                width={ state.imageWidth } 
-                height={ state.imageHeight } 
-                onChangeSizeSubmit={ (width, height) => resizeImage(width, height) }
-              />
-            )
-          }) }>
+          <Button className="change-size" type="primary" onClick={ () => openModal(
+            "Изменение размера",
+            <ChangeSizeModal 
+              width={ loadedImage.imageOriginalWidth } 
+              height={ loadedImage.imageOriginalHeight } 
+              onChangeSizeSubmit={ (width, height) => resizeImage(width, height) }
+            />
+          )}>
             Изменить размер
           </Button>
         </div>
@@ -244,18 +186,19 @@ function App() {
             <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
           </div>
           <div className="img-info">
-            <p>{ `Width: ${state.imageWidth}` }</p>
-            <p>{ `Height: ${state.imageHeight}` }</p>
+            <p>{ `Width: ${loadedImage.imageOriginalWidth}` }</p>
+            <p>{ `Height: ${loadedImage.imageOriginalHeight}` }</p>
             <div className="color-info">
-              <div style={{ background: `rgb(${[...state.rgb]})` }} className='color' />
-              <p>{ `RGB(${state.rgb})` }</p>
+              <div style={{ background: `rgb(${[...pixelInfo.rgb]})` }} className='color' />
+              <p>{ `RGB(${pixelInfo.rgb})` }</p>
             </div>
-            <p>{ `X${state.x}` }</p>
-            <p>{ `Y${state.y}` }</p>
+            <p>{ `X${pixelInfo.x}` }</p>
+            <p>{ `Y${pixelInfo.y}` }</p>
             <Slider 
               min={ 12 } 
               max={ 300 }
-              marks={ scaleMarks } 
+              marks={ scaleMarks }
+              defaultValue={ 12 } 
               value={ scale }
               onChange={ onSliderChange } 
             />
@@ -263,17 +206,10 @@ function App() {
         </div>
       </div>
       <Modal 
-        title="Загрузка изображения" 
-        open={ isModalOpen } 
-        onCancel={ () => setIsModalOpen(false) }
-        footer={[]}
-      >
-        <Tabs defaultActiveKey="1" items={ items } />
-      </Modal>
-      <Modal 
-        title="Загрузка изображения" 
+        title={ modal.title } 
         open={ modal.show } 
         onCancel={ () => setModal({...modal, show: false}) }
+        onOk={ () => setModal({...modal, show: false}) }
         footer={[]}
       >
         { modal.content }

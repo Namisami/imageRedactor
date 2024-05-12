@@ -22,7 +22,13 @@ const URLUpload = ({
           .get(values.url, {
             responseType: 'blob'
           })
-          .then(res => onSuccessUpload(new File([res.data], values.url.slice(values.url.lastIndexOf('/') + 1, values.url.indexOf('.'), { type: res.headers['content-type'] }))))
+          .then(res => onSuccessUpload(new File(
+            [res.data], 
+            values.url.slice(
+              values.url.lastIndexOf('/') + 1, 
+              values.url.indexOf('.'), 
+              { type: res.headers['content-type'] }
+            ))))
           .catch(err => console.log(err))
       }}
     >
