@@ -27,6 +27,7 @@ function App() {
     imageOriginalWidth: 0,
     imageOriginalHeight: 0
   })
+  const [scale, setImageScale] = useState(100);
   const [pixelInfo, setPixelInfo] = useState({
     rgb: [0, 0, 0],
     x: 0,
@@ -37,7 +38,6 @@ function App() {
     title: '',
     content: null,
   });
-  const [scale, setImageScale] = useState(100);
 
   const getCanvasNCtx = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
     const canvas = canvasRef.current!;
@@ -141,7 +141,17 @@ function App() {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
     const newData = getNewDataNearestNeighbour(imageData, newWidth, newHeight);
     setLoadedImage({...loadedImage, imageUri: newData})
-  }
+  };
+
+  const downloadImage = () => {
+    const [canvas, _] = getCanvasNCtx();
+    changeImageScale(100);
+    const image = canvas.toDataURL();
+    const aDownloadLink = document.createElement('a');
+    aDownloadLink.download = 'canvas_image.png';
+    aDownloadLink.href = image;
+    aDownloadLink.click();
+  };
 
   const openModal = (
     title: string,
@@ -167,7 +177,7 @@ function App() {
           <Button className="upload" type="primary" onClick={ () => openModal(
             "Загрузить изображение",
             <Tabs defaultActiveKey="1" items={ tabsItemsOnFunc(uploadImageToCanvas) } />
-          ) }>
+          )}>
             Загрузить изображение
           </Button>
           <Button className="change-size" type="primary" onClick={ () => openModal(
@@ -179,6 +189,9 @@ function App() {
             />
           )}>
             Изменить размер
+          </Button>
+          <Button className="download" type="primary" onClick={ downloadImage }>
+            Сохранить
           </Button>
         </div>
         <div className="work-panel">
