@@ -65,3 +65,26 @@ export function rgbToLab(rgb: [number, number, number]) {
 
   return [l, a, b]
 }
+
+export function contrastCalc(color1: [number, number, number], color2: [number, number, number]){
+  const li1 = (0.299 * color1[0] + 0.587 * color1[1] + 0.114 * color1[2] ) + 0.05
+  const li2 = (0.299 * color2[0] + 0.587 * color2[1] + 0.114 * color2[2] ) + 0.05
+  let k = 0;
+  if (li1 && li2){
+      if (li1 >= li2) {
+          k = li1 / li2
+      } 
+      else {
+          k = li2 / li1
+      }
+    }
+  const contrastScale = k.toFixed(2);
+  let isContrast = false;
+  if (k >= 4.5) {
+      isContrast = true
+  }
+  return {
+    scale: contrastScale,
+    isContrast: isContrast,
+  }
+}

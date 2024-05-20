@@ -1,6 +1,6 @@
 import { Divider } from 'antd';
 import { PixelInfoI } from '../../App';
-import { rgbToXyz, rgbToLab } from '../../utils/conversionColors';
+import { rgbToXyz, rgbToLab, contrastCalc } from '../../utils/conversionColors';
 import './PickColorMenu.css';
 
 interface PickColorMenuProps {
@@ -33,6 +33,12 @@ const PickColorMenu = ({
         </div>
       </div>
       <p>{ `X${color2.x}; Y${color2.y}` }</p>
+      <Divider />
+      <p>Контрастность { contrastCalc(color1.rgb, color2.rgb).scale }</p>
+      { contrastCalc(color1.rgb, color2.rgb).isContrast 
+        ? <p>Цвета контрастны</p>
+        : <p>Цвета не контрастны</p>
+      }
     </div>
   )
 };
