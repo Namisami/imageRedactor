@@ -26,6 +26,14 @@ interface ModalI {
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgViewRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({
+    drag: false,
+    startX: 0,
+    startY: 0,
+    scrollX: 0,
+    scrollY: 0,
+  })
   const [loadedImage, setLoadedImage] = useState<LoadedImageI>({
     imageUri: '',
     imageOriginalWidth: 0,
@@ -53,7 +61,7 @@ function App() {
     x: 0,
     y: 0
   });
-
+  
   const getCanvasNCtx = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d', {
@@ -206,6 +214,46 @@ function App() {
       title: title,
       content: content
     })
+  };
+
+  const onImgViewMouseDown = (e: React.MouseEvent) => {
+    const imgView = e.target as HTMLDivElement;
+    dragRef.current = {
+      ...dragRef.current,
+      drag: true,
+      startX: e.pageX - imgView.offsetLeft,
+      startY: e.pageY - imgView.offsetTop,
+    };
+    imgViewRef.current!!.style.cursor = "grabbing";
+  };
+
+  const onImgViewMouseUp = () => {
+    dragRef.current.drag = false;
+    imgViewRef.current!!.style.cursor = "auto";
+  }
+
+  const onImgViewMouseMove = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!dragRef.current.drag || !imgViewRef.current ) return;
+    
+    const maxScrollLeft = imgViewRef.current.scrollWidth - imgViewRef.current.clientWidth;
+    
+    const imgView = e.target as HTMLDivElement;
+    const x = e.pageX - imgView.offsetLeft;
+    const y = e.pageY - imgView.offsetTop;
+    const walkX = (x - dragRef.current.startX) * 1;
+    const walkY = (y - dragRef.current.startY) * 1;
+
+    if (imgViewRef.current.scrollLeft - walkX >= maxScrollLeft || imgViewRef.current.scrollLeft - walkX < 0) return
+    
+    imgViewRef.current.scrollLeft = dragRef.current.scrollX - walkX;
+    dragRef.current.scrollX = dragRef.current.scrollX - walkX;
+    dragRef.current.startX = x;
+    
+    console.log(dragRef.current.scrollY - walkY)
+    imgViewRef.current.scrollTop = dragRef.current.scrollY - walkY;
+    dragRef.current.scrollY = dragRef.current.scrollY - walkY;
+    dragRef.current.startY = y;
   }
 
   return (
@@ -233,10 +281,16 @@ function App() {
           </Button>
         </div>
         <div className="work-panel">
-          <div className="img-view">
+          <div
+            ref={ imgViewRef }
+            className="img-view"
+            onMouseDown={ onImgViewMouseDown }
+            onMouseMove={ onImgViewMouseMove }
+            onMouseUp={ onImgViewMouseUp }
+          >
             <canvas 
-              className='canvas' 
               ref={ canvasRef } 
+              className='canvas' 
               onMouseMove={ pixelInfoChange } 
               onClick={ colorChange }
             />
