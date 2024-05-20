@@ -17,7 +17,7 @@ const IconButton = ({
   onIconButtonClick,
 }: IconButtonProps) => {
   return (
-    <Tooltip placement='bottom' title={ hint }>
+    <Tooltip overlayStyle={{ whiteSpace: 'pre-line' }} placement='bottom' title={ hint }>
       { active
         ?
         <Button type='primary' className='icon-btn' onClick={ onIconButtonClick }>

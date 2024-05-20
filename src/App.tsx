@@ -13,7 +13,7 @@ export interface LoadedImageI {
 }
 
 export interface PixelInfoI {
-  rgb: number[]
+  rgb: [number, number, number]
   x: number
   y: number
 }
@@ -32,7 +32,7 @@ function App() {
     imageOriginalHeight: 0
   })
   const [scale, setImageScale] = useState(100);
-  const [pixelInfo, setPixelInfo] = useState({
+  const [pixelInfo, setPixelInfo] = useState<PixelInfoI>({
     rgb: [0, 0, 0],
     x: 0,
     y: 0,
@@ -43,6 +43,16 @@ function App() {
     content: null,
   });
   const [currentTool, setCurrentTool] = useState(0);
+  const [color1, setColor1] = useState<PixelInfoI>({
+    rgb: [0, 0, 0],
+    x: 0,
+    y: 0
+  });
+  const [color2, setColor2] = useState<PixelInfoI>({
+    rgb: [0, 0, 0],
+    x: 0,
+    y: 0
+  });
 
   const getCanvasNCtx = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
     const canvas = canvasRef.current!;
@@ -129,11 +139,35 @@ function App() {
     const mouseX = e.nativeEvent.offsetX;
     const mouseY = e.nativeEvent.offsetY;
     const p = ctx.getImageData(mouseX, mouseY, 1, 1).data;
-    setPixelInfo({
-      ...pixelInfo, 
+    return {
+      p: p,
+      x: mouseX,
+      y: mouseY,
+    }
+  }
+
+  const pixelInfoChange = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const {p, x, y} = getPixelInfo(e);
+    setPixelInfo({ 
       rgb: [p[0], p[1], p[2]], 
-      x: mouseX, 
-      y: mouseY 
+      x: x, 
+      y: y, 
+    }) 
+  }
+
+  const colorChange = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const {p, x, y} = getPixelInfo(e);
+    if (e.ctrlKey) {
+      return setColor2({ 
+        rgb: [p[0], p[1], p[2]], 
+        x: x, 
+        y: y, 
+      }) 
+    }
+    return setColor1({ 
+      rgb: [p[0], p[1], p[2]], 
+      x: x, 
+      y: y, 
     }) 
   }
 
@@ -200,11 +234,18 @@ function App() {
         </div>
         <div className="work-panel">
           <div className="img-view">
-            <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
+            <canvas 
+              className='canvas' 
+              ref={ canvasRef } 
+              onMouseMove={ pixelInfoChange } 
+              onClick={ colorChange }
+            />
           </div>
           <SideMenu
             loadedImage={ loadedImage }
             pixelInfo={ pixelInfo }
+            color1={ color1 }
+            color2={ color2 }
             scale={ scale }
             currentTool={ currentTool }
             onCurrentToolChange={ onCurrentToolChange }

@@ -1,4 +1,5 @@
 .tools {
+  margin: 5px 0;
   display: flex;
   gap: 5px;
   flex-wrap: wrap;

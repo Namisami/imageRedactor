@@ -2,13 +2,18 @@ import { Slider } from 'antd';
 import type { SliderSingleProps } from 'antd';
 import { LoadedImageI, PixelInfoI } from '../../App';
 import IconButton from '../IconButton/IconButton';
+import { Collapse } from 'antd';
 import { ReactComponent as HandSvg } from '../../assets/hand.svg';
 import { ReactComponent as PipetteSvg } from '../../assets/pipette.svg';
 import './SideMenu.css';
+import PickColorMenu from '../PickColorMenu/PickColorMenu';
+import { useState } from 'react';
 
 export interface SideMenuProps {
   loadedImage: LoadedImageI
   pixelInfo: PixelInfoI
+  color1: PixelInfoI
+  color2: PixelInfoI
   scale: number
   currentTool: number
   onCurrentToolChange: (id: number) => void
@@ -23,6 +28,8 @@ const scaleMarks: SliderSingleProps['marks'] = {
 const SideMenu = ({
   loadedImage,
   pixelInfo,
+  color1,
+  color2,
   scale,
   currentTool,
   onCurrentToolChange,
@@ -56,10 +63,28 @@ const SideMenu = ({
         <IconButton
           active={ currentTool === 1 }
           component={ PipetteSvg }
-          hint="Пипетка для извлечения цвета из изображения"
+          hint={`Пипетка для извлечения цвета из изображения
+            Выбор первого цвета: ЛКМ
+            Выбор второго цвета: Ctrl + ЛКМ
+          `}
           onIconButtonClick={ () => onCurrentToolChange(1) }
         />
       </div>
+      { currentTool === 1 &&
+        <Collapse
+          collapsible="header"
+          bordered={ false }
+          size='small'
+          defaultActiveKey={['1']}
+          items={[
+            {
+              key: '1',
+              label: 'Пипетка',
+              children: <PickColorMenu color1={ color1 } color2={ color2 }/>,
+            },
+          ]}
+        />
+      }
     </div>
   )
 };
