@@ -2,16 +2,17 @@ import { Divider } from 'antd';
 import { PixelInfoI } from '../../App';
 import { rgbToXyz, rgbToLab, contrastCalc } from '../../utils/conversionColors';
 import './PickColorMenu.css';
+import { memo } from 'react';
 
 interface PickColorMenuProps {
   color1: PixelInfoI
   color2: PixelInfoI
 }
 
-const PickColorMenu = ({
+const PickColorMenu = memo(function PickColorMenu({
   color1,
   color2,
-}: PickColorMenuProps) => {
+}: PickColorMenuProps) {
   return (
     <div className='pick-color-menu'>
       <div className="pick-color-info">
@@ -41,6 +42,6 @@ const PickColorMenu = ({
       }
     </div>
   )
-};
+});
 
 export default PickColorMenu;
