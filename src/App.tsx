@@ -1,22 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Tabs, Modal, Button, Slider } from 'antd';
-import type { TabsProps, SliderSingleProps } from 'antd';
-import FileUpload from './pages/FileUpload/FileUpload';
-import URLUpload from './pages/URLUpload/URLUpload';
-import './App.css'
+import { Tabs, Modal, Button } from 'antd';
 import ChangeSizeModal from './components/ChangeSizeModal/ChangeSizeModal';
 import tabsItemsOnFunc from './utils/tabsItemsOnFunc';
 import getNewDataNearestNeighbour from './utils/getNewDataNearestNeighbour';
+import SideMenu from './components/SideMenu/SideMenu';
+import './App.css'
 
-interface LoadedImageI {
-  imageUri: string,
-  imageOriginalWidth: number,
-  imageOriginalHeight: number,
+export interface LoadedImageI {
+  imageUri: string
+  imageOriginalWidth: number
+  imageOriginalHeight: number
+}
+
+export interface PixelInfoI {
+  rgb: number[]
+  x: number
+  y: number
 }
 
 interface ModalI {
-  show: boolean,
-  title: string,
+  show: boolean
+  title: string
   content: React.ReactNode
 }
 
@@ -38,6 +42,7 @@ function App() {
     title: '',
     content: null,
   });
+  const [currentTool, setCurrentTool] = useState(0);
 
   const getCanvasNCtx = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
     const canvas = canvasRef.current!;
@@ -136,6 +141,10 @@ function App() {
     setImageScale(scale);
   }
 
+  const onCurrentToolChange = (id: number) => {
+    setCurrentTool(id);
+  }
+
   const resizeImage =(newWidth: number, newHeight: number) => {
     const [canvas, ctx] = getCanvasNCtx();
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
@@ -163,11 +172,6 @@ function App() {
       title: title,
       content: content
     })
-  }
-
-  const scaleMarks: SliderSingleProps['marks'] = {
-    12: '12%',
-    300: '300%',
   }
 
   return (
@@ -198,24 +202,14 @@ function App() {
           <div className="img-view">
             <canvas onMouseMove={ getPixelInfo } className='canvas' ref={ canvasRef } />
           </div>
-          <div className="img-info">
-            <p>{ `Width: ${loadedImage.imageOriginalWidth}` }</p>
-            <p>{ `Height: ${loadedImage.imageOriginalHeight}` }</p>
-            <div className="color-info">
-              <div style={{ background: `rgb(${[...pixelInfo.rgb]})` }} className='color' />
-              <p>{ `RGB(${pixelInfo.rgb})` }</p>
-            </div>
-            <p>{ `X${pixelInfo.x}` }</p>
-            <p>{ `Y${pixelInfo.y}` }</p>
-            <Slider 
-              min={ 12 } 
-              max={ 300 }
-              marks={ scaleMarks }
-              defaultValue={ 12 } 
-              value={ scale }
-              onChange={ onSliderChange } 
-            />
-          </div>
+          <SideMenu
+            loadedImage={ loadedImage }
+            pixelInfo={ pixelInfo }
+            scale={ scale }
+            currentTool={ currentTool }
+            onCurrentToolChange={ onCurrentToolChange }
+            onSliderChange={ onSliderChange }
+          />
         </div>
       </div>
       <Modal 
