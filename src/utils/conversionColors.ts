@@ -66,10 +66,38 @@ export function rgbToLab(rgb: [number, number, number]) {
   return [l, a, b]
 }
 
-export function contrastCalc(color1: [number, number, number], color2: [number, number, number]) {
-  console.log(color1, color2)
-  const li1 = (0.299 * color1[0] + 0.587 * color1[1] + 0.114 * color1[2]) + 0.05
-  const li2 = (0.299 * color2[0] + 0.587 * color2[1] + 0.114 * color2[2]) + 0.05
+function rgbToContrastPrepare (color: [number, number, number]) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  const colorR = color[0] / 255;
+  const colorG = color[1] / 255;
+  const colorB = color[2] / 255;
+
+  if (colorR <= 0.03928) {
+    r = colorR / 12.92
+  } else {
+    r = Math.pow(((colorR + 0.055) / 1.055), 2.4)
+  }
+  if (colorG <= 0.03928) {
+    g = colorG / 12.92
+  } else {
+    g = Math.pow(((colorG + 0.055) / 1.055), 2.4)
+  }
+  if (colorB <= 0.03928) {
+    b = colorB / 12.92
+  } else {
+    b = Math.pow(((colorB + 0.055) / 1.055), 2.4)
+  }
+  return [r, g, b]
+}
+
+export function contrastCalc (color1: [number, number, number], color2: [number, number, number]) {
+  const [r1, g1, b1] = rgbToContrastPrepare(color1);
+  const [r2, g2, b2] = rgbToContrastPrepare(color2);
+  const li1 = (0.2126 * r1 + 0.7152 * g1 + 0.0722 * b1) + 0.05
+  const li2 = (0.2126 * r2 + 0.7152 * g2 + 0.0722 * b2) + 0.05
   let k = 1;
   if (li1 && li2){
       if (li1 >= li2) {
