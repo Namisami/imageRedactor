@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { InputNumber, Button } from 'antd';
+import { InputNumber, Button, Checkbox } from 'antd';
 import getCanvasNCtx from '../../utils/getCanvasNCtx';
 import './CurvesModal.css';
 
 export interface CurvesModalProps {
   imageRef: React.RefObject<HTMLCanvasElement>
+  onGammaCorrectionChange: (data: string, preview: boolean) => void;
 }
 
 interface ColorRowsI {
@@ -15,9 +16,9 @@ interface ColorRowsI {
 
 const CurvesModal = ({
   imageRef: imageRef,
+  onGammaCorrectionChange,
 }: CurvesModalProps) => {
   const histRef = useRef<HTMLCanvasElement>(null);
-  const [colorRows, setColorRows] = useState<ColorRowsI>();
   const [curvePoints, setCurvePoints] = useState({
     "enter": {
       "in": 0,
@@ -28,6 +29,7 @@ const CurvesModal = ({
       "out": 255,
     },
   })
+  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     const colorsHistData = getColorsHistData();
@@ -42,15 +44,25 @@ const CurvesModal = ({
     buildColorRows(colorsHistData);
     
     ctx.beginPath();
+    
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "blue";
+    ctx.moveTo(0, 255);
+    ctx.lineTo(255, 0);
+    ctx.closePath();
+    ctx.stroke();
+    
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
     ctx.moveTo(0, 255 - curvePoints.enter.out);
     ctx.lineTo(curvePoints.enter.in, 255 - curvePoints.enter.out);
     ctx.arc(curvePoints.enter.in, 255 - curvePoints.enter.out, 5, 0, 2 * Math.PI);
     ctx.lineTo(curvePoints.exit.in, 255 - curvePoints.exit.out);
     ctx.arc(curvePoints.exit.in, 255 - curvePoints.exit.out, 5, 0, 2 * Math.PI);
     ctx.lineTo(255, 255 - curvePoints.exit.out);
-
-    ctx.lineWidth = 1;
     ctx.stroke();
+
   }, [curvePoints])
 
   const getColorsHistData = () => {
@@ -113,6 +125,12 @@ const CurvesModal = ({
     point: "enter" | "exit", 
     pointParam: "in" | "out"
   ) => {
+    if (point === "enter" && pointParam === "in") {
+      if (parseInt((e.target as HTMLInputElement).value) > curvePoints.exit.in) return;
+    }
+    if (point === "exit" && pointParam === "in") {
+      if (parseInt((e.target as HTMLInputElement).value) < curvePoints.enter.in) return;
+    }
     setCurvePoints({
       ...curvePoints, 
       [point]: {
@@ -120,6 +138,63 @@ const CurvesModal = ({
         [pointParam]: parseInt((e.target as HTMLInputElement).value)
       }
     })
+    if (isPreview) {
+      changeGammaCorrection(true);
+    }
+  }
+
+  const resetCurvePoints = () => {
+    setCurvePoints({
+      enter: {
+        in: 0,
+        out: 0,
+      },
+      exit: {
+        in: 255,
+        out: 255,
+      }
+    })
+  }
+
+  const changeGammaCorrection = (preview = false) => {
+    const [canvas, ctx] = getCanvasNCtx(imageRef);
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+
+    const srcImageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const newImageData = new Uint8ClampedArray(canvas.width * canvas.height * 4);
+    
+    const x1 = curvePoints.enter.in;
+    const y1 = curvePoints.enter.out;
+    const x2 = curvePoints.exit.in;
+    const y2 = curvePoints.exit.out;
+
+    const a = (y2 - y1) / (x2 - x1);
+    const b = y1 - a * x1;
+
+    const changePixelGammaCorrection = (i: number) => {
+      if (srcImageData[i] <= x1) {
+        newImageData[i] = y1;
+      } else if (srcImageData[i] >= x2) {
+        newImageData[i] = y2;
+      } else {
+        newImageData[i] = a * srcImageData[i] + b;
+      }
+    };
+
+    for (let i = 0; i < newImageData.length; i += 4) {
+      changePixelGammaCorrection(i);
+      changePixelGammaCorrection(i + 1);
+      changePixelGammaCorrection(i + 2);
+      newImageData[i + 3] = srcImageData[i + 3];
+    }
+    
+    const tempImageData = new ImageData(newImageData, canvas.width, canvas.height);
+    tempCtx?.putImageData(tempImageData, 0, 0);
+    onGammaCorrectionChange(tempCanvas.toDataURL(), preview);
   }
 
   return (
@@ -167,6 +242,11 @@ const CurvesModal = ({
               placeholder='Out'
           />
         </div>
+      </div>
+      <div className="curves-btns">
+        <Button type='primary' onClick={ () => changeGammaCorrection() }>Изменить</Button>
+        <Checkbox value={ isPreview } onClick={ () => setIsPreview(!isPreview) }>Предпросмотр</Checkbox>
+        <Button onClick={ resetCurvePoints }>Сбросить</Button>
       </div>
     </div>
   )
