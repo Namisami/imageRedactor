@@ -1,0 +1,18 @@
+.curves-modal {
+  display: flex;
+  flex-direction: column;
+}
+.curves-inputs {
+  margin: 1em auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+.curves-input {
+  display: flex;
+  gap: 5px;
+}
+.hist-canvas {
+  margin: auto;
+  border: 1px solid black;
+}

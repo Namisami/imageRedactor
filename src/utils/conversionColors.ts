@@ -117,3 +117,8 @@ export function contrastCalc (color1: [number, number, number], color2: [number,
     isContrast: isContrast,
   }
 }
+
+export function getBrightness (color: [number, number, number]) {
+  const [r, g, b] = rgbToContrastPrepare(color);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) * 255;
+}

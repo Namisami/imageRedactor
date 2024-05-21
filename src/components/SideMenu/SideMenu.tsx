@@ -2,12 +2,11 @@ import { Slider } from 'antd';
 import type { SliderSingleProps } from 'antd';
 import { LoadedImageI, PixelInfoI } from '../../App';
 import IconButton from '../IconButton/IconButton';
+import PickColorMenu from '../PickColorMenu/PickColorMenu';
 import { Collapse } from 'antd';
 import { ReactComponent as HandSvg } from '../../assets/hand.svg';
 import { ReactComponent as PipetteSvg } from '../../assets/pipette.svg';
 import './SideMenu.css';
-import PickColorMenu from '../PickColorMenu/PickColorMenu';
-import { useState } from 'react';
 
 export interface SideMenuProps {
   loadedImage: LoadedImageI

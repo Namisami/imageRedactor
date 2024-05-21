@@ -4,6 +4,8 @@ import ChangeSizeModal from './components/ChangeSizeModal/ChangeSizeModal';
 import tabsItemsOnFunc from './utils/tabsItemsOnFunc';
 import getNewDataNearestNeighbour from './utils/getNewDataNearestNeighbour';
 import SideMenu from './components/SideMenu/SideMenu';
+import CurvesModal from './components/CurvesModal/CurvesModal';
+import getCanvasNCtx from './utils/getCanvasNCtx';
 import './App.css'
 
 export interface LoadedImageI {
@@ -61,14 +63,6 @@ function App() {
     x: 0,
     y: 0
   });
-  
-  const getCanvasNCtx = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d', {
-      willReadFrequently: true
-    })!;
-    return [canvas, ctx]
-  }
 
   useEffect(() => {
     const imgPromise = imageUriToImgPromise(loadedImage.imageUri);
@@ -97,7 +91,7 @@ function App() {
   };
 
   const renderImage = () => {
-    const [canvas, ctx] = getCanvasNCtx();
+    const [canvas, ctx] = getCanvasNCtx(canvasRef);
     const imgPromise = imageUriToImgPromise(loadedImage.imageUri);
     imgPromise.then((img) => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -105,7 +99,7 @@ function App() {
   }
 
   const renderImageFull = (img: HTMLImageElement) => {
-    const [canvas, _] = getCanvasNCtx();
+    const [canvas, _] = getCanvasNCtx(canvasRef);
     
     const maxWidth = canvas.parentElement!.clientWidth;
     const maxHeight = canvas.parentElement!.clientHeight;
@@ -123,7 +117,7 @@ function App() {
   }
 
   const changeImageScale = (scale: number) => {
-    const [canvas, _] = getCanvasNCtx();
+    const [canvas, _] = getCanvasNCtx(canvasRef);
     
     const scaleMultiplyer = scale / 100; 
 
@@ -143,7 +137,7 @@ function App() {
   }
 
   const getPixelInfo = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const [_, ctx] = getCanvasNCtx();
+    const [_, ctx] = getCanvasNCtx(canvasRef);
     const mouseX = e.nativeEvent.offsetX;
     const mouseY = e.nativeEvent.offsetY;
     const p = ctx.getImageData(mouseX, mouseY, 1, 1).data;
@@ -164,6 +158,7 @@ function App() {
   }
 
   const colorChange = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (currentTool !== 1) return;
     const {p, x, y} = getPixelInfo(e);
     if (e.ctrlKey) {
       return setColor2({ 
@@ -188,14 +183,14 @@ function App() {
   }
 
   const resizeImage =(newWidth: number, newHeight: number) => {
-    const [canvas, ctx] = getCanvasNCtx();
+    const [canvas, ctx] = getCanvasNCtx(canvasRef);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
     const newData = getNewDataNearestNeighbour(imageData, newWidth, newHeight);
     setLoadedImage({...loadedImage, imageUri: newData})
   };
 
   const downloadImage = () => {
-    const [canvas, _] = getCanvasNCtx();
+    const [canvas, _] = getCanvasNCtx(canvasRef);
     changeImageScale(100);
     const image = canvas.toDataURL();
     const aDownloadLink = document.createElement('a');
@@ -250,7 +245,6 @@ function App() {
     dragRef.current.scrollX = dragRef.current.scrollX - walkX;
     dragRef.current.startX = x;
     
-    console.log(dragRef.current.scrollY - walkY)
     imgViewRef.current.scrollTop = dragRef.current.scrollY - walkY;
     dragRef.current.scrollY = dragRef.current.scrollY - walkY;
     dragRef.current.startY = y;
@@ -279,22 +273,46 @@ function App() {
           <Button className="download" type="primary" onClick={ downloadImage }>
             Сохранить
           </Button>
+          <Button className="curves" type="primary" onClick={ () => openModal(
+            "Коррекция градиента",
+            <CurvesModal 
+              imageRef={ canvasRef }
+            />
+          )}>
+            Кривые
+          </Button>
         </div>
         <div className="work-panel">
-          <div
-            ref={ imgViewRef }
-            className="img-view"
-            onMouseDown={ onImgViewMouseDown }
-            onMouseMove={ onImgViewMouseMove }
-            onMouseUp={ onImgViewMouseUp }
-          >
-            <canvas 
-              ref={ canvasRef } 
-              className='canvas' 
-              onMouseMove={ pixelInfoChange } 
-              onClick={ colorChange }
-            />
-          </div>
+          { currentTool === 0
+            ?
+            <div
+              ref={ imgViewRef }
+              className="img-view"
+              onMouseDown={ onImgViewMouseDown }
+              onMouseMove={ onImgViewMouseMove }
+              onMouseUp={ onImgViewMouseUp }
+            >
+              <canvas 
+                ref={ canvasRef } 
+                className='canvas' 
+                onMouseMove={ pixelInfoChange } 
+                onClick={ colorChange }
+              />
+            </div>
+            :
+            <div
+              ref={ imgViewRef }
+              className="img-view"
+            >
+              <canvas 
+                ref={ canvasRef } 
+                className='canvas' 
+                onMouseMove={ pixelInfoChange } 
+                onClick={ colorChange }
+              />
+            </div>
+
+          }
           <SideMenu
             loadedImage={ loadedImage }
             pixelInfo={ pixelInfo }
