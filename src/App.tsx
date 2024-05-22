@@ -251,9 +251,9 @@ function App() {
     dragRef.current.startY = y;
   }
 
-  const changeGammaCorrection = (data: string) => {
-    setLoadedImage({...loadedImage, imageUri: data})
-  }
+  const changeLoadedImage = (data: string) => {
+    setLoadedImage({...loadedImage, imageUri: data});
+  };
 
   return (
     <div className="container">
@@ -284,18 +284,19 @@ function App() {
               "Коррекция градиента",
               <CurvesModal 
                 imageRef={ canvasRef }
-                onGammaCorrectionChange={ (data) => changeGammaCorrection(data) }
+                onGammaCorrectionChange={ (data) => changeLoadedImage(data) }
               />
             )
           }}>
             Кривые
           </Button>
-          <Button className="curves" type="primary" onClick={ () => {
+          <Button className="filtration" type="primary" onClick={ () => {
+            setImageScale(100);  
             openModal(
               "Фильтрация",
               <FilterModal 
                 imageRef={ canvasRef }
-                onFilterChange={ (data) => console.log(data) }
+                onFilterChange={ (data) => changeLoadedImage(data) }
               />
             )
           }}>

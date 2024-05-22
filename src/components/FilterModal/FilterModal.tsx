@@ -21,13 +21,13 @@ const FilterModal = ({
 
   useEffect(() => {
     if (isPreview) {
-      kernelExecute();
+      renderPreview();
     }
   }, [isPreview])
   
   useEffect(() => {
     if (isPreview) {
-      kernelExecute();
+      renderPreview();
     }
   }, [filterValues]);
 
@@ -74,12 +74,12 @@ const FilterModal = ({
     return matrix; 
   }
 
-  const kernelExecute = () => {
+  const makeFilteredData = () => {
     const [canvas, ctx] = getCanvasNCtx(imageRef);
     const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const srcData = canvasImageData.data
     
-    const [previewCanvas, previewCtx] = getCanvasNCtx(previewRef);
+    const [previewCanvas, _] = getCanvasNCtx(previewRef);
     
     previewCanvas.height = canvas.height;
     previewCanvas.width = canvas.width;
@@ -115,7 +115,20 @@ const FilterModal = ({
       }
     }
     const tempImageData = new ImageData(newImageData, canvas.width, canvas.height);
+
+    return tempImageData;
+  }
+
+  const renderPreview = () => {
+    const [_, previewCtx] = getCanvasNCtx(previewRef);
+    const tempImageData = makeFilteredData();
     previewCtx.putImageData(tempImageData, 0, 0);
+  }
+
+  const applyFiltration = () => {
+    const [previewCanvas, _] = getCanvasNCtx(previewRef);
+    renderPreview();
+    onFilterChange(previewCanvas.toDataURL());
   }
 
   const handlePreview = () => {
@@ -188,7 +201,7 @@ const FilterModal = ({
         />
       </div>
       <div className="filter-btns">
-        <Button type='primary'>Изменить</Button>
+        <Button type='primary' onClick={ applyFiltration }>Изменить</Button>
         <Checkbox checked={ isPreview } onClick={ handlePreview }>Предпросмотр</Checkbox>
         <Button onClick={ resetValues }>Сбросить</Button>
       </div>
