@@ -21,3 +21,7 @@
   margin: auto;
   border: 1px solid black;
 }
+.preview {
+  max-width: 70%;
+  margin: 0 auto 1em auto;
+}

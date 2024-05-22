@@ -40,12 +40,7 @@ function App() {
     imageUri: '',
     imageOriginalWidth: 0,
     imageOriginalHeight: 0
-  })
-  const [tempLoadedImage, setTempLoadedImage] = useState<LoadedImageI>({
-    imageUri: '',
-    imageOriginalWidth: 0,
-    imageOriginalHeight: 0
-  })
+  });
   const [scale, setImageScale] = useState(100);
   const [pixelInfo, setPixelInfo] = useState<PixelInfoI>({
     rgb: [0, 0, 0],
@@ -80,18 +75,6 @@ function App() {
       );
     })
   }, [loadedImage.imageUri])
-
-  useEffect(() => {
-    const imgPromise = imageUriToImgPromise(tempLoadedImage.imageUri);
-    imgPromise.then((img) => {
-      renderImageFull(img);
-      setTempLoadedImage({
-        ...tempLoadedImage,
-        imageOriginalWidth: img.naturalWidth, 
-        imageOriginalHeight: img.naturalHeight}
-      );
-    })
-  }, [tempLoadedImage.imageUri])
 
   useEffect(() => {
     changeImageScale(scale);
@@ -267,12 +250,8 @@ function App() {
     dragRef.current.startY = y;
   }
 
-  const changeGammaCorrection = (data: string, preview: boolean) => {
-    if (preview) {
-      setTempLoadedImage({...loadedImage, imageUri: data})
-    } else {
-      setLoadedImage({...loadedImage, imageUri: data})
-    }
+  const changeGammaCorrection = (data: string) => {
+    setLoadedImage({...loadedImage, imageUri: data})
   }
 
   return (
@@ -302,7 +281,7 @@ function App() {
             "Коррекция градиента",
             <CurvesModal 
               imageRef={ canvasRef }
-              onGammaCorrectionChange={ (data, preview) => changeGammaCorrection(data, preview) }
+              onGammaCorrectionChange={ (data) => changeGammaCorrection(data) }
             />
           )}>
             Кривые

@@ -5,7 +5,7 @@ import './CurvesModal.css';
 
 export interface CurvesModalProps {
   imageRef: React.RefObject<HTMLCanvasElement>
-  onGammaCorrectionChange: (data: string, preview: boolean) => void;
+  onGammaCorrectionChange: (data: string) => void;
 }
 
 interface ColorRowsI {
@@ -19,6 +19,7 @@ const CurvesModal = ({
   onGammaCorrectionChange,
 }: CurvesModalProps) => {
   const histRef = useRef<HTMLCanvasElement>(null);
+  const previewRef = useRef<HTMLCanvasElement>(null);
   const [curvePoints, setCurvePoints] = useState({
     "enter": {
       "in": 0,
@@ -63,7 +64,27 @@ const CurvesModal = ({
     ctx.lineTo(255, 255 - curvePoints.exit.out);
     ctx.stroke();
 
+    if (isPreview) {
+      previewRender();
+    }
   }, [curvePoints])
+
+  useEffect(() => {
+    if (isPreview) {
+      previewRender();
+    }
+  }, [isPreview])
+
+  const previewRender = () => {
+    const [canvas, _] = getCanvasNCtx(imageRef);
+    const [tempCanvas, tempCtx] = getCanvasNCtx(previewRef);
+
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    
+    const tempImageData = getTempImageData();
+    tempCtx?.putImageData(tempImageData, 0, 0);
+  };
 
   const getColorsHistData = () => {
     const [canvas, ctx] = getCanvasNCtx(imageRef);
@@ -138,9 +159,6 @@ const CurvesModal = ({
         [pointParam]: parseInt((e.target as HTMLInputElement).value)
       }
     })
-    if (isPreview) {
-      changeGammaCorrection(true);
-    }
   }
 
   const resetCurvePoints = () => {
@@ -156,14 +174,8 @@ const CurvesModal = ({
     })
   }
 
-  const changeGammaCorrection = (preview = false) => {
+  const getTempImageData = () => {
     const [canvas, ctx] = getCanvasNCtx(imageRef);
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-
     const srcImageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const newImageData = new Uint8ClampedArray(canvas.width * canvas.height * 4);
     
@@ -191,10 +203,22 @@ const CurvesModal = ({
       changePixelGammaCorrection(i + 2);
       newImageData[i + 3] = srcImageData[i + 3];
     }
-    
+    console.log(newImageData)
+
     const tempImageData = new ImageData(newImageData, canvas.width, canvas.height);
+    return tempImageData;
+  }
+
+  const changeGammaCorrection = () => {
+    const [canvas, _] = getCanvasNCtx(imageRef);
+    const [tempCanvas, tempCtx] = getCanvasNCtx(previewRef);
+
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    
+    const tempImageData = getTempImageData();
     tempCtx?.putImageData(tempImageData, 0, 0);
-    onGammaCorrectionChange(tempCanvas.toDataURL(), preview);
+    onGammaCorrectionChange(tempCanvas.toDataURL());
   }
 
   return (
@@ -243,9 +267,16 @@ const CurvesModal = ({
           />
         </div>
       </div>
+      <canvas
+        ref={ previewRef }
+        className='preview'
+        style={{
+          height: ! isPreview ? 0 : ''
+        }}
+      />
       <div className="curves-btns">
         <Button type='primary' onClick={ () => changeGammaCorrection() }>Изменить</Button>
-        <Checkbox value={ isPreview } onClick={ () => setIsPreview(!isPreview) }>Предпросмотр</Checkbox>
+        <Checkbox checked={ isPreview } onClick={ () => setIsPreview(!isPreview) }>Предпросмотр</Checkbox>
         <Button onClick={ resetCurvePoints }>Сбросить</Button>
       </div>
     </div>
