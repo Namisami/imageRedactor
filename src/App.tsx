@@ -5,6 +5,7 @@ import tabsItemsOnFunc from './utils/tabsItemsOnFunc';
 import getNewDataNearestNeighbour from './utils/getNewDataNearestNeighbour';
 import SideMenu from './components/SideMenu/SideMenu';
 import CurvesModal from './components/CurvesModal/CurvesModal';
+import FilterModal from './components/FilterModal/FilterModal';
 import getCanvasNCtx from './utils/getCanvasNCtx';
 import './App.css'
 
@@ -277,14 +278,28 @@ function App() {
           <Button className="download" type="primary" onClick={ downloadImage }>
             Сохранить
           </Button>
-          <Button className="curves" type="primary" onClick={ () => openModal(
-            "Коррекция градиента",
-            <CurvesModal 
-              imageRef={ canvasRef }
-              onGammaCorrectionChange={ (data) => changeGammaCorrection(data) }
-            />
-          )}>
+          <Button className="curves" type="primary" onClick={ () => {
+            setImageScale(100);  
+            openModal(
+              "Коррекция градиента",
+              <CurvesModal 
+                imageRef={ canvasRef }
+                onGammaCorrectionChange={ (data) => changeGammaCorrection(data) }
+              />
+            )
+          }}>
             Кривые
+          </Button>
+          <Button className="curves" type="primary" onClick={ () => {
+            openModal(
+              "Фильтрация",
+              <FilterModal 
+                imageRef={ canvasRef }
+                onFilterChange={ (data) => console.log(data) }
+              />
+            )
+          }}>
+            Фильтры
           </Button>
         </div>
         <div className="work-panel">
