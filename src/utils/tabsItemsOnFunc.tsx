@@ -1,4 +1,4 @@
-import type { TabsProps, SliderSingleProps } from 'antd';
+import type { TabsProps } from 'antd';
 import FileUpload from '../pages/FileUpload/FileUpload';
 import URLUpload from '../pages/URLUpload/URLUpload';
 

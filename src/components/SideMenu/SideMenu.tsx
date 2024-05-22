@@ -4,7 +4,9 @@ import { LoadedImageI, PixelInfoI } from '../../App';
 import IconButton from '../IconButton/IconButton';
 import PickColorMenu from '../PickColorMenu/PickColorMenu';
 import { Collapse } from 'antd';
+// @ts-ignore
 import { ReactComponent as HandSvg } from '../../assets/hand.svg';
+// @ts-ignore
 import { ReactComponent as PipetteSvg } from '../../assets/pipette.svg';
 import './SideMenu.css';
 

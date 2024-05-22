@@ -21,7 +21,7 @@ const ChangeSizeModal = ({
     pWidth: 100,
     pHeight: 100,
   });
-  const [algorithm, setAlgorithm] = useState('closestNeighbour');
+  const [_, setAlgorithm] = useState('closestNeighbour');
 
   useEffect(() => {
     setMeasure({...measure, width: width, height: height});
