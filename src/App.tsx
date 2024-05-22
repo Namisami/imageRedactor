@@ -233,14 +233,16 @@ function App() {
     if (!dragRef.current.drag || !imgViewRef.current ) return;
     
     const maxScrollLeft = imgViewRef.current.scrollWidth - imgViewRef.current.clientWidth;
-    
+    const maxScrollTop = imgViewRef.current.scrollHeight - imgViewRef.current.clientHeight;
+
     const imgView = e.target as HTMLDivElement;
     const x = e.pageX - imgView.offsetLeft;
     const y = e.pageY - imgView.offsetTop;
     const walkX = (x - dragRef.current.startX) * 1;
     const walkY = (y - dragRef.current.startY) * 1;
 
-    if (imgViewRef.current.scrollLeft - walkX >= maxScrollLeft || imgViewRef.current.scrollLeft - walkX < 0) return
+    if ((imgViewRef.current.scrollLeft - walkX >= maxScrollLeft && maxScrollLeft !== 0) || (imgViewRef.current.scrollLeft - walkX < 0 && maxScrollLeft !== 0)) return
+    if ((imgViewRef.current.scrollTop - walkY >= maxScrollTop && maxScrollTop !== 0) || (imgViewRef.current.scrollTop - walkY < 0  && maxScrollTop !== 0)) return
     
     imgViewRef.current.scrollLeft = dragRef.current.scrollX - walkX;
     dragRef.current.scrollX = dragRef.current.scrollX - walkX;
