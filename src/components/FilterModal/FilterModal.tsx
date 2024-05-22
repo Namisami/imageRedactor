@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { InputNumber, Button, Checkbox, Select } from 'antd';
 import getCanvasNCtx from '../../utils/getCanvasNCtx';
 import './FilterModal.css';
+import makeImageMatrix from '../../utils/makeImageMatrix';
+import edgeMatrixPrepare from '../../utils/edgesMatrixPrepare';
 
 export interface FilterModalProps {
   imageRef: React.RefObject<HTMLCanvasElement>
@@ -12,12 +14,34 @@ const FilterModal = ({
   imageRef,
   onFilterChange
 }: FilterModalProps) => {
+  const previewRef = useRef<HTMLCanvasElement>(null);
   const [filterValues, setFilterValues] = useState<number[]>([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const [isPreview, setIsPreview] = useState(false);
+  const [filterPreset, setFilterPreset] = useState('base');
+
+  useEffect(() => {
+    if (isPreview) {
+      kernelExecute();
+    }
+  }, [isPreview])
   
   useEffect(() => {
-    const [canvas, ctx] = getCanvasNCtx(imageRef);
-    onFilterOptionsChange('base');
-  }, [])
+    if (isPreview) {
+      kernelExecute();
+    }
+  }, [filterValues]);
+
+  useEffect(() => {
+    if (filterPreset === 'base') setFilterValues([0, 0, 0, 0, 1, 0, 0, 0, 0]);
+    if (filterPreset === 'raise') setFilterValues([0, -1, 0, -1, 5, -1, 0, -1, 0]);
+    if (filterPreset === 'gauss') setFilterValues([1, 2, 1, 2, 4, 2, 1, 2, 1]);
+    if (filterPreset === 'rect') setFilterValues([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  }, [filterPreset]);
+
+  const resetValues = () => {
+    setFilterPreset('base');
+    setFilterValues([0, 0, 0, 0, 1, 0, 0, 0, 0]);
+  };
 
   const filterOptions = [
     { value: 'base', label: 'Тождественное отображение' },
@@ -27,10 +51,7 @@ const FilterModal = ({
   ]
 
   const onFilterOptionsChange = (value: string) => {
-    if (value === 'base') setFilterValues([0, 0, 0, 0, 1, 0, 0, 0, 0]);
-    if (value === 'raise') setFilterValues([0, -1, 0, -1, 5, -1, 0, -1, 0]);
-    if (value === 'gauss') setFilterValues([1, 2, 1, 2, 4, 2, 1, 2, 1]);
-    if (value === 'rect') setFilterValues([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    setFilterPreset(value);
   }
 
   const onFilterInputChange = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -38,11 +59,75 @@ const FilterModal = ({
     setFilterValues([...filterValues.slice(0, index), value, ...filterValues.slice(index + 1)])
   }
 
+  const arrayToMatrix = (array: number[]) => {
+    let matrix = [
+      [...array.slice(0, 3)],
+      [...array.slice(3, 6)],
+      [...array.slice(6, 9)],
+    ]
+    if (JSON.stringify(array) == JSON.stringify([1, 2, 1, 2, 4, 2, 1, 2, 1])) {
+      matrix = matrix.map((el) => el.map((e) => e / 16)); 
+    }
+    if (JSON.stringify(array) == JSON.stringify([1, 1, 1, 1, 1, 1, 1, 1, 1])) {
+      matrix = matrix.map((el) => el.map((e) => e / 9)); 
+    }
+    return matrix; 
+  }
+
+  const kernelExecute = () => {
+    const [canvas, ctx] = getCanvasNCtx(imageRef);
+    const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const srcData = canvasImageData.data
+    
+    const [previewCanvas, previewCtx] = getCanvasNCtx(previewRef);
+    
+    previewCanvas.height = canvas.height;
+    previewCanvas.width = canvas.width;
+
+    const newImageData = new Uint8ClampedArray(canvasImageData.width * canvasImageData.height * 4);
+
+    let kernel = arrayToMatrix(filterValues);
+    
+    const height = canvasImageData.height;
+    const width = canvasImageData.width;
+
+    let imageMatrix = makeImageMatrix(srcData, width);
+    imageMatrix = edgeMatrixPrepare(imageMatrix, width, height);
+
+    let pos = 0;
+    for (let y = 2; y <= height + 1; y++) {
+      for (let x = 8; x <= width * 4 + 4; x+=4) {
+        let R = 0;
+        let G = 0;
+        let B = 0;
+        for (let s = -1; s <= 1; s++) {
+          for (let t = -1; t <= 1; t++) {
+            R += kernel[s + 1][t + 1] * imageMatrix[y + t][x - 3 + s * 4];
+            G += kernel[s + 1][t + 1] * imageMatrix[y + t][x - 2 + s * 4];
+            B += kernel[s + 1][t + 1] * imageMatrix[y + t][x - 1 + s * 4];
+          }
+        }
+        newImageData[pos] = R;
+        newImageData[pos + 1] = G;
+        newImageData[pos + 2] = B;
+        newImageData[pos + 3] = 255;  
+        pos += 4;
+      }
+    }
+    const tempImageData = new ImageData(newImageData, canvas.width, canvas.height);
+    previewCtx.putImageData(tempImageData, 0, 0);
+  }
+
+  const handlePreview = () => {
+    setIsPreview(!isPreview);  
+  }
+
   return (
     <div className='filter-modal'>
       <Select
         className='filter-options'
         defaultValue='base'
+        value={ filterPreset }
         onChange={ (value) => onFilterOptionsChange(value) }
         options={ filterOptions } 
       />
@@ -93,10 +178,19 @@ const FilterModal = ({
           className='filter-input'
         />
       </div>
+      <div className="preview-container">
+        <canvas
+          ref={ previewRef }
+          className='preview'
+          style={{
+            height: ! isPreview ? 0 : ''
+          }}
+        />
+      </div>
       <div className="filter-btns">
         <Button type='primary'>Изменить</Button>
-        <Checkbox>Предпросмотр</Checkbox>
-        <Button>Сбросить</Button>
+        <Checkbox checked={ isPreview } onClick={ handlePreview }>Предпросмотр</Checkbox>
+        <Button onClick={ resetValues }>Сбросить</Button>
       </div>
     </div>
   )

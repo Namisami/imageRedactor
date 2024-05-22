@@ -203,7 +203,6 @@ const CurvesModal = ({
       changePixelGammaCorrection(i + 2);
       newImageData[i + 3] = srcImageData[i + 3];
     }
-    console.log(newImageData)
 
     const tempImageData = new ImageData(newImageData, canvas.width, canvas.height);
     return tempImageData;
